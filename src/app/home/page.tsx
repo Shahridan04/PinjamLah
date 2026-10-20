@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { Profile, Item, Loan } from '@/types/database';
@@ -34,11 +35,7 @@ export default function HomePage() {
   const [recentLoan, setRecentLoan] = useState<(Loan & { item?: Item }) | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     // Fetch profile
     const { data: profileData } = await supabase
       .from('profiles')
@@ -71,7 +68,9 @@ export default function HomePage() {
         .single();
       setRecentLoan({ ...loan, item: (itemData ?? undefined) as Item | undefined });
     }
-  }
+  }, []);
+
+  useEffect(() => { queueMicrotask(() => { void loadData(); }); }, [loadData]);
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -177,7 +176,7 @@ export default function HomePage() {
             >
               <div className="w-full h-28 bg-gray-100 rounded-xl mb-2 flex items-center justify-center overflow-hidden">
                 {item.image_url ? (
-                  <img
+                  <Image unoptimized width={200} height={112}
                     src={item.image_url}
                     alt={item.name}
                     className="w-full h-full object-cover"

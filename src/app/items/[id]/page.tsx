@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState, use, Suspense } from 'react';
+import { useEffect, useState, use, Suspense, useCallback } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { Item, Loan } from '@/types/database';
 import {
   ArrowLeft,
   Heart,
-  Shield,
   Play,
   ChevronLeft,
   ChevronRight,
@@ -31,11 +31,7 @@ function ItemDetailContent({ id }: { id: string }) {
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  useEffect(() => {
-    loadItem();
-  }, [id]);
-
-  async function loadItem() {
+  const loadItem = useCallback(async () => {
     const [{ data }, { data: loans }] = await Promise.all([supabase
       .from('items')
       .select('*')
@@ -45,7 +41,9 @@ function ItemDetailContent({ id }: { id: string }) {
     if (data) setItem(data as Item);
     setMyLoan(loans?.[0] as Loan ?? null);
     setLoading(false);
-  }
+  }, [id]);
+
+  useEffect(() => { queueMicrotask(() => { void loadItem(); }); }, [loadItem]);
 
   function getDaysInMonth(date: Date) {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -164,7 +162,7 @@ function ItemDetailContent({ id }: { id: string }) {
       <div className="px-5 mb-4">
         <div className="w-full h-56 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden">
           {item.image_url ? (
-            <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+            <Image unoptimized width={400} height={224} src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
           ) : (
             <Drill size={64} className="text-gray-300" />
           )}

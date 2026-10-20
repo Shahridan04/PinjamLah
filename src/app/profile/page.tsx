@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import type { Profile, Loan, Item } from '@/types/database';
-import { Settings, ChevronRight, Award, Shield, Leaf } from 'lucide-react';
+import { Settings, ChevronRight, Shield } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const RESIDENT_ID = 'aina-rahman-001';
@@ -20,11 +21,7 @@ export default function ProfilePage() {
   const [borrowHistory, setBorrowHistory] = useState<(Loan & { item?: Item })[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     // Fetch profile
     const { data: profileData } = await supabase
       .from('profiles')
@@ -55,7 +52,9 @@ export default function ProfilePage() {
     }
 
     setLoading(false);
-  }
+  }, []);
+
+  useEffect(() => { queueMicrotask(() => { void loadData(); }); }, [loadData]);
 
   const buysAvoided = Math.max(Math.floor((profile?.completed_borrows || 0) * 0.67), 8);
   const co2Progress = Math.min(((profile?.total_co2_kg || 186) / 200) * 100, 100);
@@ -209,7 +208,7 @@ export default function ProfilePage() {
               >
                 <div className="w-14 h-14 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0">
                   {loan.item?.image_url ? (
-                    <img
+                    <Image unoptimized width={56} height={56}
                       src={loan.item.image_url}
                       alt={loan.item.name}
                       className="w-full h-full object-cover rounded-xl"

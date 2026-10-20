@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, Suspense } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { Item } from '@/types/database';
@@ -18,7 +19,6 @@ function ExploreContent() {
   const [loading, setLoading] = useState(true);
 
   const fetchItems = useCallback(async () => {
-    setLoading(true);
     let query = supabase.from('items').select('*');
 
     // Search filter
@@ -49,12 +49,13 @@ function ExploreContent() {
   }, [searchQuery, activeFilter, category]);
 
   useEffect(() => {
-    fetchItems();
+    queueMicrotask(() => { void fetchItems(); });
   }, [fetchItems]);
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    fetchItems();
+    setLoading(true);
+    void fetchItems();
   }
 
   return (
@@ -88,6 +89,7 @@ function ExploreContent() {
             <button
               key={f}
               onClick={() => {
+                setLoading(true);
                 setActiveFilter(f);
                 setCategory('');
               }}
@@ -143,7 +145,7 @@ function ExploreContent() {
             >
               <div className="w-20 h-20 bg-gray-50 rounded-xl flex-shrink-0 flex items-center justify-center overflow-hidden">
                 {item.image_url ? (
-                  <img
+                  <Image unoptimized width={80} height={80}
                     src={item.image_url}
                     alt={item.name}
                     className="w-full h-full object-cover"

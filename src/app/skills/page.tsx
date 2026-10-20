@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import type { SkillHelper } from '@/types/database';
-import { ArrowLeft, MapPin, Star, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Star, MessageCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const SKILL_CATEGORIES = ['Carpentry', 'Gardening', 'Home repair', 'Furniture assembly'];
@@ -17,12 +18,7 @@ export default function SkillsPage() {
   const [requestingId, setRequestingId] = useState<string | null>(null);
   const [requestSent, setRequestSent] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchHelpers();
-  }, [activeSkill]);
-
-  async function fetchHelpers() {
-    setLoading(true);
+  const fetchHelpers = useCallback(async () => {
     let query = supabase.from('skill_helpers').select('*');
 
     if (activeSkill) {
@@ -34,7 +30,9 @@ export default function SkillsPage() {
     const { data } = await query;
     if (data) setHelpers(data as SkillHelper[]);
     setLoading(false);
-  }
+  }, [activeSkill]);
+
+  useEffect(() => { queueMicrotask(() => { void fetchHelpers(); }); }, [fetchHelpers]);
 
   async function handleRequestAssistance(helper: SkillHelper) {
     setRequestingId(helper.id);
@@ -88,7 +86,7 @@ export default function SkillsPage() {
         {SKILL_CATEGORIES.map((skill) => (
           <button
             key={skill}
-            onClick={() => setActiveSkill(activeSkill === skill ? '' : skill)}
+            onClick={() => { setLoading(true); setActiveSkill(activeSkill === skill ? '' : skill); }}
             className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold transition-colors ${
               activeSkill === skill
                 ? 'bg-forest text-white'
@@ -132,7 +130,7 @@ export default function SkillsPage() {
               <div className="flex gap-3 mb-3">
                 <div className="w-12 h-12 rounded-full bg-forest/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
                   {helper.avatar_url ? (
-                    <img src={helper.avatar_url} alt={helper.full_name} className="w-full h-full object-cover" />
+                     <Image unoptimized width={48} height={48} src={helper.avatar_url} alt={helper.full_name} className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-forest font-bold">{helper.full_name.charAt(0)}</span>
                   )}

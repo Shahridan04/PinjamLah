@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { Profile, Loan, Item } from '@/types/database';
@@ -31,11 +31,7 @@ function ImpactContent() {
   const [timeframe, setTimeframe] = useState<'month' | 'year' | 'all'>('year');
   const [communityItems, setCommunityItems] = useState<Item[]>([]);
 
-  useEffect(() => {
-    loadData();
-  }, [view, timeframe]);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     // Load profile
     const { data: profileData } = await supabase
       .from('profiles')
@@ -75,7 +71,9 @@ function ImpactContent() {
         .order('total_loans', { ascending: false });
       if (items) setCommunityItems(items as Item[]);
     }
-  }
+  }, [view]);
+
+  useEffect(() => { queueMicrotask(() => { void loadData(); }); }, [loadData]);
 
   // Generate mock monthly savings data from loans
   const monthlyData = [

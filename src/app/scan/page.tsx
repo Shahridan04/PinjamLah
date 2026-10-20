@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { Loan, Item, Locker } from '@/types/database';
@@ -11,7 +12,6 @@ import {
   CheckCircle2,
   Circle,
   Camera,
-  Upload,
   Loader2,
   Lock,
   Unlock,
@@ -38,17 +38,13 @@ function ScanContent() {
   const [returnPhoto, setReturnPhoto] = useState<File | null>(null);
   const [returnPhotoPreview, setReturnPhotoPreview] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
-  const [verificationResult, setVerificationResult] = useState<Record<string, unknown> | null>(null);
   const [returnComplete, setReturnComplete] = useState(false);
   const [returnBayOpened, setReturnBayOpened] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load loan data
+  // Load loan data when the requested pass changes.
   useEffect(() => {
-    loadData();
-  }, [loanIdParam]);
-
-  async function loadData() {
+    async function loadData() {
     if (!loanIdParam) {
       // Find most recent active loan
       const { data: loans } = await supabase
@@ -92,12 +88,13 @@ function ScanContent() {
     const { data: lockerData } = await supabase.from('lockers').select('*').order('bay_code');
     if (lockerData) setLockers(lockerData as Locker[]);
     setLoading(false);
-  }
-
-  async function loadItem(itemId: string) {
-    const { data } = await supabase.from('items').select('*').eq('id', itemId).single();
-    if (data) setItem(data as Item);
-  }
+    }
+    async function loadItem(itemId: string) {
+      const { data } = await supabase.from('items').select('*').eq('id', itemId).single();
+      if (data) setItem(data as Item);
+    }
+    void loadData();
+  }, [loanIdParam, mode]);
 
   // Subscribe to real-time locker updates
   useEffect(() => {
@@ -192,7 +189,6 @@ function ScanContent() {
       });
 
       const result = await response.json();
-      setVerificationResult(result);
 
       if (response.ok && result.success) {
         setStep(5);
@@ -278,7 +274,7 @@ function ScanContent() {
                       <div className="flex gap-3">
                         <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden">
                           {item.image_url ? (
-                            <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                            <Image unoptimized width={56} height={56} src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
                           ) : (
                             <span className="text-2xl">🔧</span>
                           )}
@@ -544,7 +540,7 @@ function ScanContent() {
 
                     {returnPhotoPreview ? (
                       <div className="relative w-full h-40 rounded-xl overflow-hidden mb-2">
-                        <img
+                         <Image unoptimized width={380} height={160}
                           src={returnPhotoPreview}
                           alt="Return photo"
                           className="w-full h-full object-cover"
