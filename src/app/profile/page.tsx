@@ -229,7 +229,7 @@ export default function ProfilePage() {
                     {loan.status === 'RETURNED'
                       ? `Returned ${loan.returned_at ? new Date(loan.returned_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : ''}`
                       : loan.status === 'ACTIVE'
-                        ? '📦 Active borrow'
+                         ? '📦 Active borrow · Return item →'
                         : '🕐 Reserved'}
                     {loan.status === 'RETURNED' && ' · Returned on time'}
                   </p>

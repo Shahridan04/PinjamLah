@@ -40,6 +40,7 @@ function ScanContent() {
   const [verifying, setVerifying] = useState(false);
   const [verificationResult, setVerificationResult] = useState<Record<string, unknown> | null>(null);
   const [returnComplete, setReturnComplete] = useState(false);
+  const [returnBayOpened, setReturnBayOpened] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load loan data
@@ -132,6 +133,38 @@ function ScanContent() {
     };
   }, [loan?.id, mode]);
 
+  // Reconcile missed realtime events (including when the phone resumes after sleeping).
+  useEffect(() => {
+    if (!loan?.id || mode !== 'return' || returnComplete) return;
+    let cancelled = false;
+    const refresh = async () => {
+      const [loanResult, bayResult] = await Promise.all([
+        supabase.from('loans').select('*').eq('id', loan.id).single(),
+        supabase.from('lockers').select('*').eq('bay_code', loan.locker_bay).single(),
+      ]);
+      if (cancelled) return;
+      if (loanResult.error || bayResult.error) {
+        setError('Unable to check the bay. Check your connection and try again.');
+        return;
+      }
+      setError('');
+      const latest = loanResult.data as Loan;
+      setLoan(latest);
+      setLockers(previous => previous.map(bay => bay.bay_code === loan.locker_bay ? bayResult.data as Locker : bay));
+      if (latest.status === 'RETURNED') {
+        setReturnComplete(true);
+        setStep(5);
+      } else if (latest.status === 'ACTIVE' && bayResult.data.is_unlocked) {
+        setReturnBayOpened(true);
+      }
+    };
+    void refresh();
+    const timer = window.setInterval(() => { void refresh(); }, 3000);
+    const onVisible = () => { if (document.visibilityState === 'visible') void refresh(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { cancelled = true; window.clearInterval(timer); document.removeEventListener('visibilitychange', onVisible); };
+  }, [loan?.id, loan?.locker_bay, mode, returnComplete]);
+
   // The resident only presents a pass; only the kiosk may trigger locker actions.
 
   // Handle photo capture/upload
@@ -145,29 +178,23 @@ function ScanContent() {
     }
   }
 
-  // Send photo to Gemini Vision API for verification
+  // Demo photo is previewed locally; only the self-report is sent.
   async function handleVerifyReturn() {
-    if (!loan || !item || !returnPhoto) return;
+    if (!loan || !item || !returnPhoto || !returnBayOpened) return;
+    setError('');
     setVerifying(true);
 
     try {
-      const formData = new FormData();
-      formData.append('photo', returnPhoto);
-      formData.append('loan_id', loan.id);
-      formData.append('item_id', item.id);
-      formData.append('item_name', item.name);
-      formData.append('working_well', String(workingWell));
-      formData.append('all_parts_included', String(allParts));
-
       const response = await fetch('/api/verify-return', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ loan_id: loan.id, item_id: item.id, working_well: workingWell, all_parts_included: allParts }),
       });
 
       const result = await response.json();
       setVerificationResult(result);
 
-      if (result.success) {
+      if (response.ok && result.success) {
         setStep(5);
         setReturnComplete(true);
         // Refresh loan data
@@ -182,7 +209,7 @@ function ScanContent() {
       }
     } catch (err) {
       console.error('Verification error:', err);
-      setError('Verification failed. Please try again.');
+      setError('Return could not be completed. Check your connection and try again.');
     } finally {
       setVerifying(false);
     }
@@ -376,7 +403,7 @@ function ScanContent() {
   // ============ RETURN MODE ============
   const returnSteps = [
     { label: 'Return your item', done: step > 1, active: step === 1 },
-    { label: 'Scan your return QR', done: step > 2, active: step === 2 },
+    { label: 'Present your return QR at the shed', done: step > 2, active: step === 2 },
     { label: 'How did it hold up?', done: step > 3, active: step === 3 },
     { label: 'Take or upload a photo', done: step > 4, active: step === 4 },
     { label: 'Return confirmed. Thank you!', done: returnComplete, active: step === 5 && returnComplete },
@@ -511,8 +538,8 @@ function ScanContent() {
                 {i === 3 && (step === 3 || step === 4) && (
                   <div className="mt-2">
                     <p className="text-xs text-gray-400 mb-2">
-                      Add a photo · Optional<br />
-                      Help the next borrower see it&apos;s ready.
+                      Add a photo · Required<br />
+                       Demo only: preview the item and its parts. The photo stays on this device and is not inspected or uploaded.
                     </p>
 
                     {returnPhotoPreview ? (
@@ -580,7 +607,13 @@ function ScanContent() {
           </button>
         )}
 
-        {step === 2 && mode === 'return' && lockers.some(l => l.bay_code === loan?.locker_bay && l.is_unlocked) && (
+        {step === 2 && loan && (
+          <p role="status" className="text-sm text-forest mb-4">
+            {returnBayOpened ? `Bay ${loan.locker_bay} is open. Place your item inside, then continue below.` : `Waiting for the shed to scan your QR and open bay ${loan.locker_bay}…`}
+          </p>
+        )}
+
+        {step === 2 && mode === 'return' && returnBayOpened && (
           <button onClick={() => setStep(3)} className="btn-primary mb-4">Item placed in open bay →</button>
         )}
         {step === 3 && mode === 'return' && (

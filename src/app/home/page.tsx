@@ -234,7 +234,7 @@ export default function HomePage() {
             </div>
             <div className="flex-1 text-left">
               <p className="font-semibold text-sm text-gray-900">
-                {recentLoan.status === 'RETURNED' ? 'Nice work. Back in the circle.' : 'Active borrow'}
+                 {recentLoan.status === 'RETURNED' ? 'Nice work. Back in the circle.' : recentLoan.status === 'ACTIVE' ? 'Return item →' : 'View pickup pass →'}
               </p>
               <p className="text-xs text-gray-400">
                 {recentLoan.item?.name || recentLoan.item_id} ·{' '}

@@ -3,7 +3,7 @@
 import { useEffect, useState, use, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import type { Item } from '@/types/database';
+import type { Item, Loan } from '@/types/database';
 import {
   ArrowLeft,
   Heart,
@@ -24,6 +24,7 @@ function generateToken() {
 function ItemDetailContent({ id }: { id: string }) {
   const router = useRouter();
   const [item, setItem] = useState<Item | null>(null);
+  const [myLoan, setMyLoan] = useState<Loan | null>(null);
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
   const [startDate, setStartDate] = useState<Date | null>(null);
@@ -35,12 +36,14 @@ function ItemDetailContent({ id }: { id: string }) {
   }, [id]);
 
   async function loadItem() {
-    const { data } = await supabase
+    const [{ data }, { data: loans }] = await Promise.all([supabase
       .from('items')
       .select('*')
       .eq('id', id)
-      .single();
+      .single(), supabase.from('loans').select('*').eq('item_id', id).eq('resident_id', RESIDENT_ID)
+        .in('status', ['ACTIVE', 'RESERVED']).order('start_date', { ascending: false }).limit(1)]);
     if (data) setItem(data as Item);
+    setMyLoan(loans?.[0] as Loan ?? null);
     setLoading(false);
   }
 
@@ -173,7 +176,7 @@ function ItemDetailContent({ id }: { id: string }) {
 
       {/* Status Badges */}
       <div className="px-5 mb-3 flex gap-2">
-        <span className="pill-available">Available</span>
+        <span className={item.status === 'Available' ? 'pill-available' : item.status === 'Reserved' ? 'pill-reserved' : 'pill-in-use'}>{item.status}</span>
         <span className="bg-soft-blue text-gray-600 text-xs font-medium px-3 py-1 rounded-full">
           Township owned
         </span>
@@ -299,6 +302,11 @@ function ItemDetailContent({ id }: { id: string }) {
 
       {/* CTA */}
       <div className="px-5 mb-8">
+        {myLoan && (
+          <button onClick={() => router.push(`/scan?mode=${myLoan.status === 'ACTIVE' ? 'return' : 'borrow'}&loan_id=${myLoan.id}`)} className="btn-primary mb-3">
+            {myLoan.status === 'ACTIVE' ? 'Return item →' : 'View pickup pass →'}
+          </button>
+        )}
         <button
           onClick={handleBorrow}
           disabled={!startDate || !endDate || booking || item.status !== 'Available'}
