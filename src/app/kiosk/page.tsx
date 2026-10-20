@@ -13,6 +13,7 @@ export default function KioskPage() {
   const [qrInput, setQrInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
+  const [returnBays, setReturnBays] = useState<string[]>([]);
   const scanner = useRef<import('html5-qrcode').Html5Qrcode | null>(null);
   const processing = useRef(false);
 
@@ -87,7 +88,8 @@ export default function KioskPage() {
         const { error: itemError } = await supabase.from('items').update({ status: 'In Use' }).eq('id', validated.item_id);
         if (itemError) throw new Error('Pickup recorded, but item status needs operator attention.');
       }
-      setMessage(`${pass.action === 'PICKUP' ? 'Pickup approved' : 'Return approved'} — bay ${validated.locker_bay} is OPEN. ${pass.action === 'RETURN' ? 'Resident must finish the return photo on their phone.' : 'Collect the item, then close the bay.'}`);
+      if (pass.action === 'RETURN') setReturnBays(previous => [...new Set([...previous, validated.locker_bay])]);
+      setMessage(`${pass.action === 'PICKUP' ? 'Pickup approved' : 'Return approved'} — bay ${validated.locker_bay} is OPEN. ${pass.action === 'RETURN' ? 'Leave this bay open. Finish the photo and tap Complete return on the resident phone. The bay closes automatically.' : 'Collect the item, then close the bay.'}`);
       setQrInput('');
       await loadLockers();
       if (scanner.current) await stopCamera();
@@ -100,6 +102,10 @@ export default function KioskPage() {
   }
 
   async function closeBay(bay: string) {
+    if (returnBays.includes(bay)) {
+      setMessage('Finish the return on the resident phone. The bay will close automatically.');
+      return;
+    }
     const { error } = await supabase.from('lockers').update({ is_unlocked: false, last_updated: new Date().toISOString() }).eq('bay_code', bay);
     setMessage(error ? `Could not close bay ${bay}: ${error.message}` : `Bay ${bay} closed.`);
     await loadLockers();
@@ -115,7 +121,9 @@ export default function KioskPage() {
             {l.is_unlocked ? <Unlock /> : <Lock />}
             <p className="text-xl font-bold mt-2">{l.bay_code}</p>
             <p>{l.is_unlocked ? 'OPEN' : 'Closed'}</p>
-            {l.is_unlocked && <button className="mt-3 rounded-lg bg-forest text-white px-3 py-2 text-sm" onClick={() => void closeBay(l.bay_code)}>Close bay</button>}
+            {l.is_unlocked && (returnBays.includes(l.bay_code)
+              ? <p className="mt-3 text-xs font-semibold">Return in progress · Finish on resident phone. Bay closes automatically.</p>
+              : <button className="mt-3 rounded-lg bg-forest text-white px-3 py-2 text-sm" onClick={() => void closeBay(l.bay_code)}>Close pickup bay</button>)}
           </div>
         ))}
       </div>

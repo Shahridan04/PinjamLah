@@ -144,15 +144,14 @@ function ScanContent() {
         setError('Unable to check the bay. Check your connection and try again.');
         return;
       }
-      setError('');
       const latest = loanResult.data as Loan;
       setLoan(latest);
       setLockers(previous => previous.map(bay => bay.bay_code === loan.locker_bay ? bayResult.data as Locker : bay));
       if (latest.status === 'RETURNED') {
         setReturnComplete(true);
         setStep(5);
-      } else if (latest.status === 'ACTIVE' && bayResult.data.is_unlocked) {
-        setReturnBayOpened(true);
+      } else if (latest.status === 'ACTIVE') {
+        setReturnBayOpened(Boolean(bayResult.data.is_unlocked));
       }
     };
     void refresh();
@@ -594,6 +593,12 @@ function ScanContent() {
         </div>
 
         {/* CTA Buttons */}
+        {step >= 3 && !returnComplete && (
+          <div className="mb-4 rounded-xl bg-mint p-3 text-sm text-forest">
+            Leave the kiosk bay open while completing this return. It closes automatically when you finish.
+            {!returnBayOpened && <button onClick={() => { setError(''); setStep(2); }} className="mt-2 block font-semibold underline">Bay closed? Show return QR again to reopen it →</button>}
+          </div>
+        )}
         {step === 1 && mode === 'return' && (
           <button
             onClick={() => setStep(2)}
