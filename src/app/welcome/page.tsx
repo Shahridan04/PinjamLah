@@ -14,7 +14,7 @@ export default function WelcomePage() {
           <div className="w-10 h-10 bg-forest rounded-xl flex items-center justify-center">
             <Leaf className="text-white" size={20} />
           </div>
-          <span className="text-lg font-bold text-forest">sharing shed</span>
+          <span className="text-lg font-bold text-forest">PinjamLah</span>
         </div>
 
         {/* Neighbourhood illustration placeholder with gradient */}

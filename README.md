@@ -1,4 +1,4 @@
-# Sharing Shed (Library of Things) · Full-Stack Next.js PWA
+# PinjamLah (Library of Things) · Full-Stack Next.js PWA
 
 > **Township of Tomorrow | Sime Darby Property University Hackathon 2026**  
 > **Primary Track:** PLANET (Circular Economy) · **Secondary Track:** PEOPLE (Neighbourhood Connection)  

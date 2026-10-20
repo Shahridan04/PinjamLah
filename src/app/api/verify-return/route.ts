@@ -18,6 +18,11 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    const { data: activeLoan, error: activeError } = await supabase.from('loans').select('*').eq('id', loanId).eq('item_id', itemId).eq('status', 'ACTIVE').single();
+    if (activeError || !activeLoan) return NextResponse.json({ success: false, error: 'Active loan not found.' }, { status: 409 });
+    const { data: openedBay } = await supabase.from('lockers').select('is_unlocked').eq('bay_code', activeLoan.locker_bay).single();
+    if (!openedBay?.is_unlocked) return NextResponse.json({ success: false, error: 'Scan the return pass at the kiosk before completing your return.' }, { status: 409 });
+    if (!photo.type.startsWith('image/') || photo.size > 8 * 1024 * 1024) return NextResponse.json({ success: false, error: 'Upload an image smaller than 8 MB.' }, { status: 400 });
 
     // Convert photo to buffer for Gemini
     const bytes = await photo.arrayBuffer();
@@ -32,6 +37,7 @@ export async function POST(req: NextRequest) {
         contentType: photo.type || 'image/jpeg',
         upsert: true,
       });
+    if (uploadError) throw uploadError;
 
     let returnPhotoUrl = '';
     if (uploadData) {
@@ -42,18 +48,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Call Gemini Vision API
-    let aiResult: Record<string, unknown> = {
-      matches_item: true,
-      condition_score: 9.5,
-      accessories_visible: true,
-      notes: 'AI verification completed successfully.',
-    };
+    let aiResult: Record<string, unknown> = { status: 'manual_review', notes: 'Automated inspection unavailable; operator review required.' };
 
     const geminiApiKey = process.env.GEMINI_API_KEY;
     if (geminiApiKey && geminiApiKey !== 'your_gemini_api_key') {
       try {
         const genAI = new GoogleGenerativeAI(geminiApiKey);
-        const model = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' });
+        const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-2.5-flash' });
 
         const prompt = `You are an AI inspection system for a community tool-lending library called "Sharing Shed".
 
@@ -95,7 +96,7 @@ Return ONLY valid JSON with these 4 fields, no markdown formatting.`;
 
     const conditionScore = typeof aiResult.condition_score === 'number'
       ? aiResult.condition_score
-      : 9.5;
+      : null;
 
     // Fetch item data for savings calculation
     const { data: itemData } = await supabase
@@ -117,10 +118,10 @@ Return ONLY valid JSON with these 4 fields, no markdown formatting.`;
         ai_verification_json: aiResult,
         return_condition_score: conditionScore,
       })
-      .eq('id', loanId);
+      .eq('id', loanId).eq('status', 'ACTIVE');
 
     if (loanError) {
-      console.error('Loan update error:', loanError);
+      throw loanError;
     }
 
     // 2. Get loan's locker bay
@@ -148,7 +149,7 @@ Return ONLY valid JSON with these 4 fields, no markdown formatting.`;
         .update({
           status: 'Available',
           total_loans: (itemData.total_loans || 0) + 1,
-          condition_score: conditionScore,
+          ...(conditionScore !== null ? { condition_score: conditionScore } : {}),
         })
         .eq('id', itemId);
 

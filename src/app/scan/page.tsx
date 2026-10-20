@@ -30,8 +30,7 @@ function ScanContent() {
   const [lockers, setLockers] = useState<Locker[]>([]);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [scanning, setScanning] = useState(false);
-  const [unlocking, setUnlocking] = useState(false);
+  const [error, setError] = useState('');
 
   // Return specific state
   const [workingWell, setWorkingWell] = useState(true);
@@ -116,69 +115,24 @@ function ScanContent() {
           );
         }
       )
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'loans' }, (payload) => {
+        const updated = payload.new as Loan;
+        if (updated.id !== loan?.id) return;
+        setLoan(updated);
+        if (updated.status === 'ACTIVE' && mode === 'borrow') setStep(5);
+        if (updated.status === 'RETURNED' && mode === 'return') {
+          setStep(5);
+          setReturnComplete(true);
+        }
+      })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [loan?.id, mode]);
 
-  // Simulate QR scan -> unlock locker
-  async function handleScanPickup() {
-    if (!loan || !item) return;
-    setScanning(true);
-    setStep(3);
-
-    // Simulate scanning delay
-    await new Promise((r) => setTimeout(r, 1500));
-    setUnlocking(true);
-
-    // Unlock locker in Supabase
-    await supabase
-      .from('lockers')
-      .update({ is_unlocked: true, last_updated: new Date().toISOString() })
-      .eq('bay_code', loan.locker_bay);
-
-    setStep(4);
-    setScanning(false);
-
-    // After unlocking, mark loan as ACTIVE
-    await new Promise((r) => setTimeout(r, 2000));
-
-    await supabase
-      .from('loans')
-      .update({
-        status: 'ACTIVE',
-        collected_at: new Date().toISOString(),
-      })
-      .eq('id', loan.id);
-
-    await supabase
-      .from('items')
-      .update({ status: 'In Use' })
-      .eq('id', item.id);
-
-    setLoan((prev) => prev ? { ...prev, status: 'ACTIVE', collected_at: new Date().toISOString() } : null);
-    setStep(5);
-  }
-
-  // Return flow - scan to unlock
-  async function handleScanReturn() {
-    if (!loan) return;
-    setScanning(true);
-    setStep(2);
-
-    await new Promise((r) => setTimeout(r, 1500));
-
-    // Unlock locker for return
-    await supabase
-      .from('lockers')
-      .update({ is_unlocked: true, last_updated: new Date().toISOString() })
-      .eq('bay_code', loan.locker_bay);
-
-    setScanning(false);
-    setStep(3);
-  }
+  // The resident only presents a pass; only the kiosk may trigger locker actions.
 
   // Handle photo capture/upload
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -223,10 +177,12 @@ function ScanContent() {
           .eq('id', loan.id)
           .single();
         if (updatedLoan) setLoan(updatedLoan as Loan);
+      } else {
+        setError(result.error || 'Return could not be completed. Please retry.');
       }
     } catch (err) {
       console.error('Verification error:', err);
-      alert('Verification failed. Please try again.');
+      setError('Verification failed. Please try again.');
     } finally {
       setVerifying(false);
     }
@@ -245,8 +201,8 @@ function ScanContent() {
     const borrowSteps = [
       { label: 'Reserve your item', done: step > 1 },
       { label: 'Your pickup QR is ready', done: step > 2, active: step === 2 },
-      { label: 'Scan at the sharing shed', done: step > 3, active: step === 3 },
-      { label: 'Your smart locker opens', done: step > 4, active: step === 4 },
+      { label: 'Scan at the PinjamLah shed', done: step > 3, active: step === 3 },
+      { label: 'Your simulated locker opens', done: step > 4, active: step === 4 },
       { label: 'Borrow confirmed', done: step >= 5, active: step === 5 },
     ];
 
@@ -339,10 +295,10 @@ function ScanContent() {
                       <div className="mt-4 text-center">
                         <p className="font-semibold text-sm mb-1">Locker {loan.locker_bay}</p>
                         <p className="text-xs text-gray-400">
-                          {item?.shed_name} shed · {item?.distance_m}m from home
+                           {item?.shed_name} · {item?.distance_m}m from home
                         </p>
                         <p className="text-[10px] text-gray-400 mt-1">
-                          Reusable QR. Not valid for access.
+                           Present this pass to the shed kiosk. Do not share it.
                         </p>
                       </div>
                     </div>
@@ -351,7 +307,7 @@ function ScanContent() {
                   {/* Step 3 - Scan instruction */}
                   {i === 2 && step >= 2 && step <= 3 && (
                     <p className="text-xs text-gray-400 mt-1">
-                      Present your pickup QR to the scanner beside the locker doors.
+                       Present your pickup QR to the shed kiosk scanner.
                     </p>
                   )}
 
@@ -402,19 +358,7 @@ function ScanContent() {
           </div>
 
           {/* CTA Buttons */}
-          {step === 2 && (
-            <button
-              onClick={handleScanPickup}
-              className="btn-primary flex items-center justify-center gap-2 mb-4"
-              disabled={scanning}
-            >
-              {scanning ? (
-                <Loader2 className="animate-spin" size={18} />
-              ) : (
-                <>Scan at the sharing shed →</>
-              )}
-            </button>
-          )}
+          {step === 2 && <p className="text-center text-sm text-forest mb-4">Waiting for the shed kiosk to scan your pass…</p>}
 
           {step === 5 && (
             <button
@@ -521,7 +465,7 @@ function ScanContent() {
                             includeMargin
                           />
                         </div>
-                        <p className="text-[10px] text-gray-400 mt-2">Reusable QR. No refund for access.</p>
+                        <p className="text-[10px] text-gray-400 mt-2">Present this pass to the kiosk. Do not share it.</p>
                       </div>
                     )}
                   </div>
@@ -629,13 +573,16 @@ function ScanContent() {
         {/* CTA Buttons */}
         {step === 1 && mode === 'return' && (
           <button
-            onClick={handleScanReturn}
+            onClick={() => setStep(2)}
             className="btn-primary flex items-center justify-center gap-2 mb-4"
           >
-            Scan your return QR →
+            Show return QR →
           </button>
         )}
 
+        {step === 2 && mode === 'return' && lockers.some(l => l.bay_code === loan?.locker_bay && l.is_unlocked) && (
+          <button onClick={() => setStep(3)} className="btn-primary mb-4">Item placed in open bay →</button>
+        )}
         {step === 3 && mode === 'return' && (
           <button
             onClick={() => setStep(4)}
@@ -670,6 +617,7 @@ function ScanContent() {
             🌱 See my impact →
           </button>
         )}
+        {error && <p role="alert" className="text-red-600 text-sm text-center mb-4">{error}</p>}
 
         {returnComplete && (
           <p className="text-xs text-gray-400 text-center mb-4">

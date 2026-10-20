@@ -3,13 +3,13 @@ import "./globals.css";
 import BottomNav from "@/components/BottomNav";
 
 export const metadata: Metadata = {
-  title: "Sharing Shed",
+  title: "PinjamLah",
   description: "Borrow from your township's shared library of things. Save money, reduce waste, share resources.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Sharing Shed",
+    title: "PinjamLah",
   },
 };
 

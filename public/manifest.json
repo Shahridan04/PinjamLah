@@ -1,6 +1,6 @@
 {
-  "name": "Sharing Shed",
-  "short_name": "Sharing Shed",
+  "name": "PinjamLah",
+  "short_name": "PinjamLah",
   "description": "Borrow from your township's shared library of things",
   "start_url": "/home",
   "display": "standalone",

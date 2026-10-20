@@ -109,10 +109,11 @@ function ItemDetailContent({ id }: { id: string }) {
       if (loanError) throw loanError;
 
       // Update item status
-      await supabase
+      const { error: itemError } = await supabase
         .from('items')
         .update({ status: 'Reserved' })
-        .eq('id', item.id);
+        .eq('id', item.id).eq('status', 'Available');
+      if (itemError) throw itemError;
 
       // Navigate to scan page
       router.push(`/scan?mode=borrow&loan_id=${loanId}`);
