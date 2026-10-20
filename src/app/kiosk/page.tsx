@@ -23,14 +23,20 @@ export default function KioskPage() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'lockers' }, (payload) => {
         const updated = payload.new as Locker;
         setLockers(prev => prev.map(l => l.bay_code === updated.bay_code ? updated : l));
+        if (!updated.is_unlocked) setReturnBays(previous => previous.filter(bay => bay !== updated.bay_code));
       }).subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    // Poll as a fallback when realtime events are missed between demo cycles.
+    const timer = window.setInterval(() => { void loadLockers(); }, 3000);
+    return () => { window.clearInterval(timer); void supabase.removeChannel(channel); };
   }, []);
 
   async function loadLockers() {
     const { data, error } = await supabase.from('lockers').select('*').order('bay_code');
     if (error) setMessage(`Unable to load lockers: ${error.message}`);
-    else setLockers(data as Locker[]);
+    else {
+      setLockers(data as Locker[]);
+      setReturnBays(previous => previous.filter(bay => data.some(locker => locker.bay_code === bay && locker.is_unlocked)));
+    }
   }
 
   async function stopCamera() {
@@ -75,6 +81,8 @@ export default function KioskPage() {
       }
       if (pass.action === 'PICKUP' && validated.status !== 'RESERVED') throw new Error('This booking is not awaiting pickup.');
       if (pass.action === 'RETURN' && validated.status !== 'ACTIVE') throw new Error('This item is not on an active loan.');
+      // A new pickup must never inherit a previous return's UI lock for this bay.
+      if (pass.action === 'PICKUP') setReturnBays(previous => previous.filter(bay => bay !== validated.locker_bay));
       const { data: locker, error: lockerError } = await supabase.from('lockers').select('*').eq('bay_code', validated.locker_bay).single();
       if (lockerError || !locker || locker.shed_name !== 'Central Park shed') throw new Error('Wrong shed or locker not found.');
       if (locker.is_unlocked) throw new Error('Bay is already open. Close it before scanning again.');
