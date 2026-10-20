@@ -1,5 +1,37 @@
 @import "tailwindcss";
 
+/* Resident and public-kiosk surfaces share the same neighbourhood identity. */
+.mobile-frame:has(.kiosk-console) { max-width: none; border: 0; box-shadow: none; }
+.eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.kiosk-console { min-height: 100dvh; background: #103e32; color: white; padding: 28px clamp(20px, 5vw, 80px); }
+.kiosk-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding-bottom: 24px; border-bottom: 1px solid #ffffff20; }
+.kiosk-badge { border: 1px solid #ffffff40; border-radius: 99px; padding: 8px 12px; font-size: 10px; letter-spacing: .08em; }
+.kiosk-intro { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin: 40px 0; }
+.kiosk-intro h1 { font-size: clamp(32px, 4vw, 56px); line-height: 1.08; letter-spacing: -.045em; font-weight: 600; margin-top: 14px; }
+.kiosk-sync { font-size: 12px; text-align: right; }
+.kiosk-workspace { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); gap: 28px; align-items: start; }
+.kiosk-lockers { padding: 26px; border: 1px solid #ffffff25; border-radius: 24px; background: #ffffff05; }
+.kiosk-bay { min-height: 180px; border-radius: 16px; padding: 20px; background: #ffffff09; border: 1px solid #ffffff25; }
+.kiosk-bay-open { background: #d9ef9e; color: #103e32; border-color: #d9ef9e; }
+.kiosk-scanner { padding: 28px; border-radius: 24px; background: #faf9f4; color: #18372c; }
+.scanner-symbol { display: inline-flex; padding: 18px; border-radius: 20px; background: #e8efdf; }
+.kiosk-message { display: flex; align-items: center; gap: 14px; margin-top: 24px; padding: 20px 24px; border: 1px solid #ffffff25; border-radius: 16px; background: #092e24; font-size: 14px; line-height: 1.6; }
+.resident-hero { margin: 0 20px 24px; border-radius: 24px; padding: 26px; background: #103e32; color: white; }
+.resident-hero h2 { font-size: 38px; line-height: 1.08; font-weight: 600; letter-spacing: -.045em; margin: 18px 0 14px; }
+.resident-hero a { display: inline-flex; align-items: center; gap: 22px; background: #d9ef9e; color: #103e32; padding: 12px 18px; border-radius: 99px; margin-top: 20px; font-size: 13px; font-weight: 700; }
+:where(a, button, input, summary):focus-visible { outline: 3px solid #79a345; outline-offset: 4px; }
+@media (max-width: 800px) {
+  .kiosk-workspace { grid-template-columns: 1fr; }
+  .kiosk-intro { align-items: start; flex-direction: column; margin: 28px 0; }
+  .kiosk-sync { text-align: left; }
+  .kiosk-header { align-items: start; }
+  .kiosk-lockers, .kiosk-scanner { padding: 18px; }
+  .kiosk-bay { padding: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
 @theme {
   /* Sharing Shed Design Tokens */
   --color-canvas: #F9F8F3;

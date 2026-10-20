@@ -1,0 +1,28 @@
+
+> pinjamlah@0.1.0 dev
+> next dev
+
+▲ Next.js 16.4.2 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.56.1:3000
+- Environments: .env.local
+✓ Ready in 1256ms
+✓ Running next.config.ts took 93ms
+- Cache Components enabled
+- Partial Prefetching enabled
+
+ GET /kiosk 200 in 646ms (next.js: 315ms, application-code: 331ms)
+✓ Compiled in 155ms
+ GET /home 200 in 149ms (next.js: 13ms, application-code: 136ms)
+✓ Compiled in 152ms
+✓ Compiled in 130ms
+ GET /profile 200 in 94ms (next.js: 23ms, application-code: 71ms)
+ GET /home 200 in 39ms (next.js: 5ms, application-code: 34ms)
+ GET /home 200 in 71ms (next.js: 5ms, application-code: 65ms)
+ GET /kiosk 200 in 84ms (next.js: 3ms, application-code: 82ms)
+ GET / 307 in 105ms (next.js: 17ms, application-code: 88ms)
+ GET /welcome 200 in 69ms (next.js: 12ms, application-code: 57ms)
+ GET /home 200 in 34ms (next.js: 2ms, application-code: 32ms)
+ GET /explore 200 in 52ms (next.js: 14ms, application-code: 38ms)
+ GET /items/PW-008 200 in 998ms (next.js: 17ms, generate-params: 942ms, application-code: 39ms)
+ GET /scan?mode=borrow&loan_id=loan-1792509888172 200 in 48ms (next.js: 15ms, application-code: 33ms)

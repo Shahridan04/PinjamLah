@@ -19,7 +19,7 @@ export default function BottomNav() {
   if (pathname === '/' || pathname === '/welcome' || pathname === '/kiosk') return null;
 
   return (
-    <nav className="bottom-nav">
+    <nav className="bottom-nav" aria-label="Resident navigation">
       <div className="flex justify-around items-center">
         {navItems.map((item) => {
           const isActive =
@@ -30,6 +30,7 @@ export default function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive ? 'page' : undefined}
               className={isActive ? 'active' : ''}
             >
               <item.icon size={22} strokeWidth={isActive ? 2.5 : 1.5} />
