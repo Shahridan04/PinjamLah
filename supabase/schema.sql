@@ -182,6 +182,7 @@ INSERT INTO public.lockers (bay_code, shed_name, is_unlocked, battery_charge_pct
 ('A01', 'Central Park shed', false, 94, NOW()),
 ('A02', 'Central Park shed', false, 98, NOW()),
 ('A03', 'Central Park shed', false, 91, NOW()),
+('A04', 'Central Park shed', false, 100, NOW()),
 ('B01', 'Central Park shed', false, 89, NOW()),
 ('B02', 'Central Park shed', false, 96, NOW())
 ON CONFLICT (bay_code) DO NOTHING;
@@ -273,6 +274,23 @@ INSERT INTO public.items (
 ON CONFLICT (id) DO UPDATE SET
     status = EXCLUDED.status,
     total_loans = EXCLUDED.total_loans;
+
+-- Mini vacuum demo item. Preserve existing availability when re-running seed.
+-- Retail price and CO2 values are illustrative demo estimates.
+INSERT INTO public.items (
+    id, name, subtitle, category, condition_score, retail_price_rm,
+    co2_per_borrow_kg, shed_name, distance_m, locker_bay, status,
+    kit_contents, image_url, total_loans
+) VALUES (
+    'VC-001', 'Mini Vacuum',
+    'Cordless handheld vacuum for quick clean-ups, sofas and car interiors',
+    'Cleaning', 10, 150, 5, 'Central Park shed', 180, 'A04', 'Available',
+    'Includes cordless mini vacuum, crevice nozzle, brush attachment, washable filter, USB charging cable, and carry pouch. Empty the dust cup and clean the filter before returning.',
+    '/images/items/vacuum-1.jpeg', 0
+) ON CONFLICT (id) DO NOTHING;
+
+-- Refresh the demo photo without resetting an existing reservation or loan.
+UPDATE public.items SET image_url = '/images/items/vacuum-1.jpeg' WHERE id = 'VC-001';
 
 -- 4. Skill Helpers (Neighbour network)
 INSERT INTO public.skill_helpers (

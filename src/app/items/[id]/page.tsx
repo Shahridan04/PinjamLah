@@ -30,6 +30,7 @@ function ItemDetailContent({ id }: { id: string }) {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedPhoto, setSelectedPhoto] = useState(0);
 
   const loadItem = useCallback(async () => {
     const [{ data }, { data: loans }] = await Promise.all([supabase
@@ -144,6 +145,9 @@ function ItemDetailContent({ id }: { id: string }) {
   const daysInMonth = getDaysInMonth(currentMonth);
   const firstDay = getFirstDayOfMonth(currentMonth);
   const monthName = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const photos = item.id === 'VC-001'
+    ? ['/images/items/vacuum-1.jpeg', '/images/items/vacuum-2.jpeg']
+    : item.image_url ? [item.image_url] : [];
 
   return (
     <div className="page-content">
@@ -161,15 +165,24 @@ function ItemDetailContent({ id }: { id: string }) {
       {/* Image Gallery */}
       <div className="px-5 mb-4">
         <div className="w-full h-56 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden">
-          {item.image_url ? (
-            <Image unoptimized width={400} height={224} src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+          {photos.length > 0 ? (
+            <Image unoptimized width={400} height={224} src={photos[selectedPhoto] ?? photos[0]} alt={`${item.name} — photo ${selectedPhoto + 1}`} className={`w-full h-full ${photos.length > 1 ? 'object-contain' : 'object-cover'}`} />
           ) : (
             <Drill size={64} className="text-gray-300" />
           )}
         </div>
         <div className="flex items-center justify-center gap-2 mt-2">
-          <p className="text-[10px] text-gray-400">Complete kit · 3 photos</p>
+          <p className="text-[10px] text-gray-400">Complete kit · {photos.length} {photos.length === 1 ? 'photo' : 'photos'}</p>
         </div>
+        {photos.length > 1 && (
+          <div className="flex justify-center gap-2 mt-2">
+            {photos.map((photo, index) => (
+              <button key={photo} type="button" onClick={() => setSelectedPhoto(index)} aria-label={`View ${item.name} photo ${index + 1}`} aria-pressed={selectedPhoto === index} className={`w-14 h-16 rounded-lg overflow-hidden border-2 ${selectedPhoto === index ? 'border-forest' : 'border-transparent'}`}>
+                <Image unoptimized src={photo} alt="" width={56} height={64} className="w-full h-full object-cover" />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Status Badges */}
