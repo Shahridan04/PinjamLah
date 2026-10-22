@@ -78,7 +78,7 @@ export default function ProfilePage() {
             </span>
           </div>
           <div>
-            <h2 className="font-bold text-gray-900">{profile?.full_name || 'Aina Rahman'}</h2>
+            <h2 className="font-bold text-gray-900">{profile?.full_name || 'Rahman'}</h2>
             <p className="text-xs text-gray-400">
               {profile?.township || 'Taman Kita'} · Member since May 2026
             </p>

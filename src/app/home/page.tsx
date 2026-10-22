@@ -99,7 +99,7 @@ export default function HomePage() {
           <div>
             <p className="text-xs text-gray-400">Taman Kita, Selangor</p>
             <h1 className="text-2xl font-bold text-gray-900">
-              Hello, {profile?.full_name?.split(' ')[0] || 'Aina'}
+              Hello, {profile?.full_name?.split(' ')[0] || 'Rahman'}
             </h1>
           </div>
           <button
@@ -272,7 +272,7 @@ export default function HomePage() {
       </div>
 
 
-      <p className="text-center text-[11px] text-gray-500 px-5 pb-4">Aina’s demo account · A little less mine. A lot more ours.</p>
+      <p className="text-center text-[11px] text-gray-500 px-5 pb-4">Rahman’s demo account · A little less mine. A lot more ours.</p>
     </main>
   );
 }

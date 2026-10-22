@@ -54,3 +54,4 @@
  GET /home 200 in 31ms (next.js: 2ms, application-code: 28ms)
  GET /profile 200 in 39ms (next.js: 1.5ms, application-code: 38ms)
  GET /home 200 in 32ms (next.js: 1.5ms, application-code: 30ms)
+ GET /profile 200 in 39ms (next.js: 1.8ms, application-code: 37ms)

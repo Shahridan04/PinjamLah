@@ -160,19 +160,20 @@ USING (bucket_id = 'return-photos');
 -- SEED DATA
 -- =====================================================================
 
--- 1. Profile: Aina Rahman
+-- 1. Profile: Rahman
 INSERT INTO public.profiles (
     id, resident_code, full_name, township, verified_at, total_saved_rm, total_co2_kg, completed_borrows
 ) VALUES (
     'aina-rahman-001',
     'TK-029',
-    'Aina Rahman',
+    'Rahman',
     'Taman Kita, Selangor',
     '2026-05-19 10:00:00+00',
     1240,
     186,
     12
 ) ON CONFLICT (id) DO UPDATE SET
+    full_name = EXCLUDED.full_name,
     total_saved_rm = EXCLUDED.total_saved_rm,
     total_co2_kg = EXCLUDED.total_co2_kg,
     completed_borrows = EXCLUDED.completed_borrows;

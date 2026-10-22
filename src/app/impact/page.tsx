@@ -251,7 +251,7 @@ function ImpactContent() {
       <div className="px-5 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 mb-1">Less stuff. More impact.</h1>
         <p className="text-sm text-gray-400 mb-4">
-          Aina&apos;s sharing footprint · {new Date().getFullYear()} year to date
+          Rahman&apos;s sharing footprint · {new Date().getFullYear()} year to date
         </p>
 
         {/* Timeframe tabs */}

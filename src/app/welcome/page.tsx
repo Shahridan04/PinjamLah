@@ -97,7 +97,7 @@ export default function WelcomePage() {
         </button>
         <p className="text-center text-xs text-gray-400 mt-4">
           A township-owned service for Taman Kita residents.<br />
-          Demo access uses Aina&apos;s sample resident profile.
+          Demo access uses Rahman&apos;s sample resident profile.
         </p>
       </div>
     </main>
