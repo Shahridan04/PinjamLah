@@ -129,8 +129,8 @@ export default function KioskPage() {
 
   return (
     <main className="kiosk-console">
-      <header className="kiosk-header"><a href="/welcome" className="flex items-center gap-3 text-xl font-bold"><Leaf /> PinjamLah<span className="text-lime-200">.</span></a><span className="kiosk-badge">DEMO · SIMULATED LOCKERS</span></header>
-      <div className="kiosk-intro"><div><p className="eyebrow text-lime-200">CENTRAL PARK SHED</p><h1>Good things are<br />better shared.</h1><p className="text-white/70 mt-4">Pick up a possibility. Return it for the next neighbour.</p></div><div className="kiosk-sync" role="status">{connection}<p className="mt-2 text-xs text-white/50">Database-backed simulation · No physical hardware</p></div></div>
+      <header className="kiosk-header"><a href="/welcome" className="flex items-center gap-3 text-xl font-bold"><Leaf /> PinjamLah<span className="text-lime-200">.</span></a><span className="kiosk-badge">NEIGHBOURHOOD LOCKERS</span></header>
+      <div className="kiosk-intro"><div><p className="eyebrow text-lime-200">CENTRAL PARK SHED</p><h1>Good things are<br />better shared.</h1><p className="text-white/70 mt-4">Pick up a possibility. Return it for the next neighbour.</p></div><div className="kiosk-sync" role="status">{connection}<p className="mt-2 text-xs text-white/50">Scan your pass to pick up or return an item</p></div></div>
       <div className="kiosk-workspace">
       <section className="kiosk-lockers"><div className="flex items-center justify-between mb-5"><h2 className="text-lg font-semibold">Your neighbourhood lockers</h2><span className="text-xs text-white/60">{lockers.filter(l => l.shed_name === 'Central Park shed' && l.is_unlocked).length} open</span></div>
       {lockers.length === 0 && <p className="p-5 text-white/70">{connection === 'Connection interrupted' ? 'Unable to load bays. Check the connection; we’ll retry automatically.' : 'Waiting for locker data…'}</p>}

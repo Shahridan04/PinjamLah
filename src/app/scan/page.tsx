@@ -28,7 +28,13 @@ function ScanContent() {
   const [loan, setLoan] = useState<Loan | null>(null);
   const [item, setItem] = useState<Item | null>(null);
   const [lockers, setLockers] = useState<Locker[]>([]);
-  const [step, setStep] = useState(1);
+  const [returnStep, setStep] = useState(1);
+  const assignedBay = lockers.find(bay => bay.bay_code === loan?.locker_bay);
+  const step = mode === 'borrow'
+    ? loan?.status === 'ACTIVE'
+      ? assignedBay ? assignedBay.is_unlocked ? 4 : 5 : 3
+      : loan?.status === 'RETURNED' ? 5 : loan ? 2 : 1
+    : returnStep;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -132,7 +138,7 @@ function ScanContent() {
 
   // Reconcile missed realtime events (including when the phone resumes after sleeping).
   useEffect(() => {
-    if (!loan?.id || mode !== 'return' || returnComplete) return;
+    if (!loan?.id || (mode === 'return' && returnComplete)) return;
     let cancelled = false;
     const refresh = async () => {
       const [loanResult, bayResult] = await Promise.all([
@@ -147,6 +153,7 @@ function ScanContent() {
       const latest = loanResult.data as Loan;
       setLoan(latest);
       setLockers(previous => previous.map(bay => bay.bay_code === loan.locker_bay ? bayResult.data as Locker : bay));
+      if (mode === 'borrow') return;
       if (latest.status === 'RETURNED') {
         setReturnComplete(true);
         setStep(5);
@@ -224,7 +231,7 @@ function ScanContent() {
       { label: 'Reserve your item', done: step > 1 },
       { label: 'Your pickup QR is ready', done: step > 2, active: step === 2 },
       { label: 'Scan at the PinjamLah shed', done: step > 3, active: step === 3 },
-      { label: 'Your simulated locker opens', done: step > 4, active: step === 4 },
+      { label: 'Your locker opens', done: step > 4, active: step === 4 },
       { label: 'Borrow confirmed', done: step >= 5, active: step === 5 },
     ];
 
@@ -337,10 +344,12 @@ function ScanContent() {
                   {i === 3 && step >= 3 && (
                     <div className="mt-2">
                       <p className="text-xs text-gray-400 mb-2">
-                        Take the drill kit and check all accessories.
+                        {assignedBay?.is_unlocked
+                          ? `Bay ${loan?.locker_bay} is open. Collect ${item?.name ?? 'your item'}, check all accessories, then close the bay.`
+                          : `Bay ${loan?.locker_bay} is closed.`}
                       </p>
                       <div className="flex gap-2 mt-2">
-                        {lockers.slice(0, 3).map((l) => (
+                        {lockers.filter(l => l.bay_code === loan?.locker_bay).map((l) => (
                           <div
                             key={l.bay_code}
                             className={`locker-bay ${
@@ -352,7 +361,7 @@ function ScanContent() {
                             ) : (
                               <Lock size={16} />
                             )}
-                            <span className="ml-1 text-xs">{l.bay_code}</span>
+                            <span className="ml-1 text-xs">{l.bay_code} · {l.is_unlocked ? 'Open' : 'Closed'}</span>
                           </div>
                         ))}
                       </div>
@@ -363,8 +372,7 @@ function ScanContent() {
                   {i === 4 && step === 5 && (
                     <div className="mt-2">
                       <p className="text-xs text-gray-500">
-                        Collected {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} at{' '}
-                        {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}. You&apos;re all set!
+                        Bay {loan?.locker_bay} is closed. Pickup recorded{loan?.collected_at ? ` ${new Date(loan.collected_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : ''}. You&apos;re all set!
                       </p>
                       <p className="text-xs text-gray-400 mt-1">
                         Return by {loan ? new Date(loan.end_date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : '...'}, 18:00 to {loan?.locker_bay}.
@@ -449,8 +457,12 @@ function ScanContent() {
                     <p className="text-xs text-gray-400 mb-2">Choose your current loan to begin.</p>
                     <div className="card bg-mint/30 border-forest/10">
                       <div className="flex gap-3">
-                        <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center">
-                          <span className="text-2xl">🔧</span>
+                        <div className="w-14 h-14 shrink-0 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden">
+                          {item.image_url ? (
+                            <Image unoptimized width={56} height={56} src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-2xl">🔧</span>
+                          )}
                         </div>
                         <div>
                           <p className="font-semibold text-sm">{item.name} · {item.id}</p>
@@ -534,7 +546,7 @@ function ScanContent() {
                   <div className="mt-2">
                     <p className="text-xs text-gray-400 mb-2">
                       Add a photo · Required<br />
-                       Demo only: preview the item and its parts. The photo stays on this device and is not inspected or uploaded.
+                      Take a clear photo showing the item and all included accessories.
                     </p>
 
                     {returnPhotoPreview ? (
