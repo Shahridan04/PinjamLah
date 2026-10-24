@@ -1,3 +1,11 @@
+# Live Demo Link
+
+Visit:
+
+- Mobile App: https://pinjam-lah.vercel.app
+
+- IoT Kiosk Screen: https://pinjam-lah.vercel.app/kiosk
+
 # PinjamLah (Library of Things) · Full-Stack Next.js PWA
 
 > **Township of Tomorrow | Sime Darby Property University Hackathon 2026**  
